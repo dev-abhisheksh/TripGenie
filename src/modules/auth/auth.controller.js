@@ -127,8 +127,30 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     });
 });
 
+const logoutUser = asyncHandler(async (req, res) => {
+    res.cookie("accessToken", "", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        expires: new Date(0)
+    });
+
+    res.cookie("refreshToken", "", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        expires: new Date(0)
+    });
+
+    return res.status(200).json({
+        success: true,
+        message: "User logged out successfully"
+    });
+});
+
 export {
     register,
     loginUser,
-    getCurrentUser
+    getCurrentUser,
+    logoutUser
 }
