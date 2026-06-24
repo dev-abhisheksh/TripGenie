@@ -31,13 +31,11 @@ const itinerarySchema = new mongoose.Schema({
     shareId: {
         type: String,
         required: true,
-        unique: true,
-        index: true
+        unique: true
     }
 
 }, { timestamps: true });
 
 itinerarySchema.index({ user: 1, createdAt: -1 });
-itinerarySchema.index({ shareId: 1 });
 
 export const Itinerary = mongoose.model("Itinerary", itinerarySchema);

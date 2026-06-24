@@ -1,75 +1,58 @@
 import asyncHandler from "../../middleware/asyncHandler.middleware.js";
 import ApiError from "../../utils/apiError.js";
 import uploadToCloudinary from "../../utils/uploadToCloudinary.js";
-import Tesseract from "tesseract.js";
-import { createRequire } from "module";
 import { extractTravelData } from "../../services/ai.service.js";
 import extractText from "../../utils/extractText.js";
 import { generateItinerary } from "../../services/itinerary.service.js";
 import { Itinerary } from "./Itinerary.model.js";
 import mongoose from "mongoose";
-
-const require = createRequire(import.meta.url);
-const pdf = require("pdf-parse");
+import crypto from "crypto";
 
 const uploadDocument = asyncHandler(async (req, res) => {
     if (!req.file) {
         throw new ApiError(400, "File is required");
     }
 
-    const session = await mongoose.startSession();
+    const uploadResult = await uploadToCloudinary(
+        req.file.buffer,
+        "auto"
+    );
 
-    try {
-        session.startTransaction();
+    const extractedText = await extractText(req.file);
 
-        const uploadResult = await uploadToCloudinary(
-            req.file.buffer,
-            "auto"
-        );
+    let aiResponse = await extractTravelData(extractedText);
+    aiResponse = JSON.parse(aiResponse);
 
-        const extractedText = await extractText(req.file);
+    // Generate itinerary from the aiResponses
+    let itinerary = await generateItinerary(aiResponse);
+    itinerary = JSON.parse(itinerary);
 
-        let aiResponse = await extractTravelData(extractedText);
-        aiResponse = JSON.parse(aiResponse);
+    // Saving to db (safe, atomic single document creation)
+    const itineraryDoc = new Itinerary({
+        user: req.user._id,
+        fileUrl: uploadResult.secure_url,
+        fileType:
+            req.file.mimetype === "application/pdf"
+                ? "pdf"
+                : "image",
+        extractedText,
+        itineraryData: itinerary,
+        shareId: crypto.randomUUID(),
+    });
 
-        // Generate itinerary from the aiRespnses
-        let itinerary = await generateItinerary(aiResponse);
-        itinerary = JSON.parse(itinerary);
+    await itineraryDoc.save();
 
-        // Saveing to db
-        const itineraryDoc = new Itinerary({
-            user: req.user._id,
-            fileUrl: uploadResult.secure_url,
-            fileType:
-                req.file.mimetype === "application/pdf"
-                    ? "pdf"
-                    : "image",
-            extractedText,
-            itineraryData: itinerary,
-            shareId: crypto.randomUUID(),
-        });
-
-        await itineraryDoc.save({ session });
-
-        await session.commitTransaction();
-
-        return res.status(201).json({
-            success: true,
-            message: "Itinerary generated successfully",
-            data: {
-                itineraryId: itineraryDoc._id,
-                shareId: itineraryDoc.shareId,
-                itinerary: itineraryDoc.itineraryData,
-                fileUrl: itineraryDoc.fileUrl,
-                createdAt: itineraryDoc.createdAt,
-            },
-        });
-    } catch (error) {
-        await session.abortTransaction();
-        throw error;
-    } finally {
-        await session.endSession();
-    }
+    return res.status(201).json({
+        success: true,
+        message: "Itinerary generated successfully",
+        data: {
+            itineraryId: itineraryDoc._id,
+            shareId: itineraryDoc.shareId,
+            itinerary: itineraryDoc.itineraryData,
+            fileUrl: itineraryDoc.fileUrl,
+            createdAt: itineraryDoc.createdAt,
+        },
+    });
 });
 
 const getAllItineraries = asyncHandler(async (req, res) => {
@@ -87,7 +70,49 @@ const getAllItineraries = asyncHandler(async (req, res) => {
     });
 });
 
+const getItineraryById = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new ApiError(400, "Invalid itinerary ID");
+    }
+
+    const itinerary = await Itinerary.findOne({
+        _id: id,
+        user: req.user._id,
+    }).select("-__v");
+
+    if (!itinerary) {
+        throw new ApiError(404, "Itinerary not found");
+    }
+
+    return res.status(200).json({
+        success: true,
+        message: "Itinerary fetched successfully",
+        itinerary,
+    });
+});
+
+const getSharedItinerary = asyncHandler(async (req, res) => {
+    const { shareId } = req.params;
+
+    const itinerary = await Itinerary.findOne({ shareId })
+        .select("-extractedText -__v -updatedAt");
+
+    if (!itinerary) {
+        throw new ApiError(404, "Shared itinerary not found");
+    }
+
+    return res.status(200).json({
+        success: true,
+        message: "Shared itinerary fetched successfully",
+        itinerary,
+    });
+});
+
 export {
     uploadDocument,
-    getAllItineraries
+    getAllItineraries,
+    getItineraryById,
+    getSharedItinerary
 };
