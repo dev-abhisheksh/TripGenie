@@ -7,7 +7,7 @@ const errorMiddleware = (err, req, res, next) => {
     }
 
     res.status(statusCode || 500).json({
-        message: false,
+        success: false,
         message,
         stack: process.env.NODE_ENV === "development" ? err.stack : null
     })
