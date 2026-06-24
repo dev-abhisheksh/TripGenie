@@ -120,7 +120,15 @@ const loginUser = asyncHandler(async (req, res) => {
     });
 })
 
+const getCurrentUser = asyncHandler(async (req, res) => {
+    res.status(200).json({
+        success: true,
+        user: req.user
+    });
+});
+
 export {
     register,
-    loginUser
+    loginUser,
+    getCurrentUser
 }
