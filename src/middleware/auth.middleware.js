@@ -1,5 +1,5 @@
-import ApiError from "../utils/apiError";
-import asyncHandler from "./asyncHandler.middleware";
+import ApiError from "../utils/apiError.js";
+import asyncHandler from "./asyncHandler.middleware.js";
 
 export const verifyToken = asyncHandler(async (req, res, next) => {
     const token = req.cookies?.accessToken || req.headers.authorization?.replace("Bearer", "")

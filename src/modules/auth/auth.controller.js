@@ -78,6 +78,49 @@ const register = asyncHandler(async (req, res) => {
     })
 })
 
+const loginUser = asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+    if (!email || !password) {
+        throw new ApiError(400, "Email and password are required")
+    }
+
+    const userExists = await User.findOne({ email }).select("+password")
+    if (!userExists) throw new ApiError(404, "User does not exist")
+
+    const isPassValid = await bcrypt.compare(password, userExists.password)
+    if (!isPassValid) throw new ApiError(401, "Invalid credentials")
+
+    const accessToken = generateAccessToken(userExists)
+    const refreshToken = generateRefreshToken(userExists)
+
+    res.cookie("accessToken", accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 1 * 24 * 60 * 60 * 1000
+    })
+
+    res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000
+    })
+
+    res.status(200).json({
+        success: true,
+        message: "User logged in successfully",
+        user: {
+            _id: userExists._id,
+            username: userExists.username,
+            fullName: userExists.fullName,
+            email: userExists.email,
+            avatar: userExists.avatar,
+        },
+    });
+})
+
 export {
-    register
+    register,
+    loginUser
 }
