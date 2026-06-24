@@ -5,6 +5,9 @@ import Tesseract from "tesseract.js";
 import { createRequire } from "module";
 import { extractTravelData } from "../../services/ai.service.js";
 import extractText from "../../utils/extractText.js";
+import { generateItinerary } from "../../services/itinerary.service.js";
+import { Itinerary } from "./Itinerary.model.js";
+import mongoose from "mongoose";
 
 const require = createRequire(import.meta.url);
 const pdf = require("pdf-parse");
@@ -14,26 +17,59 @@ const uploadDocument = asyncHandler(async (req, res) => {
         throw new ApiError(400, "File is required");
     }
 
-    const uploadResult = await uploadToCloudinary(
-        req.file.buffer,
-        "auto"
-    );
+    const session = await mongoose.startSession();
 
-    const extractedText = await extractText(req.file)
-    console.log("Extracted Text:", extractedText);
+    try {
+        session.startTransaction();
 
-    // console.log("Extracted Text:", extractedText);
+        const uploadResult = await uploadToCloudinary(
+            req.file.buffer,
+            "auto"
+        );
 
-    let aiResponse = await extractTravelData(extractedText)
-    aiResponse = JSON.parse(aiResponse)
-    console.log("Ai response:", aiResponse)
+        const extractedText = await extractText(req.file);
 
-    res.status(200).json({
-        success: true,
-        aiResponse,
-        fileUrl: uploadResult.secure_url,
-        publicId: uploadResult.public_id,
-    });
+        let aiResponse = await extractTravelData(extractedText);
+        aiResponse = JSON.parse(aiResponse);
+
+        // Generate itinerary from the aiRespnses
+        let itinerary = await generateItinerary(aiResponse);
+        itinerary = JSON.parse(itinerary);
+
+        // Saveing to db
+        const itineraryDoc = new Itinerary({
+            user: req.user._id,
+            fileUrl: uploadResult.secure_url,
+            fileType:
+                req.file.mimetype === "application/pdf"
+                    ? "pdf"
+                    : "image",
+            extractedText,
+            itineraryData: itinerary,
+            shareId: crypto.randomUUID(),
+        });
+
+        await itineraryDoc.save({ session });
+
+        await session.commitTransaction();
+
+        return res.status(201).json({
+            success: true,
+            message: "Itinerary generated successfully",
+            data: {
+                itineraryId: itineraryDoc._id,
+                shareId: itineraryDoc.shareId,
+                itinerary: itineraryDoc.itineraryData,
+                fileUrl: itineraryDoc.fileUrl,
+                createdAt: itineraryDoc.createdAt,
+            },
+        });
+    } catch (error) {
+        await session.abortTransaction();
+        throw error;
+    } finally {
+        await session.endSession();
+    }
 });
 
 export {
