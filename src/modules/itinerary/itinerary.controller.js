@@ -1,5 +1,8 @@
 import asyncHandler from "../../middleware/asyncHandler.middleware.js";
 import uploadToCloudinary from "../../utils/uploadToCloudinary.js";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const pdf = require("pdf-parse");
 
 const uploadDocument = asyncHandler(async (req, res) => {
     if (!req.file) {
@@ -10,6 +13,9 @@ const uploadDocument = asyncHandler(async (req, res) => {
         req.file.buffer,
         "auto"
     );
+
+    const data = await pdf(req.file.buffer)
+    console.log("Extracted DATA:", data.text)
 
     res.status(200).json({
         success: true,
