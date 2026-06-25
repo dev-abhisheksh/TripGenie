@@ -38,6 +38,12 @@ const uploadDocument = asyncHandler(async (req, res) => {
         extractedText,
         itineraryData: itinerary,
         shareId: crypto.randomUUID(),
+        from: aiResponse.departureCity || aiResponse.departureAirport || "",
+        to: aiResponse.arrivalCity || aiResponse.arrivalAirport || "",
+        date: aiResponse.departureDate && aiResponse.returnDate 
+            ? `${aiResponse.departureDate} - ${aiResponse.returnDate}` 
+            : (aiResponse.departureDate || aiResponse.checkInDate || ""),
+        location: aiResponse.arrivalCity || aiResponse.hotelName || "",
     });
 
     await itineraryDoc.save();
@@ -50,6 +56,10 @@ const uploadDocument = asyncHandler(async (req, res) => {
             shareId: itineraryDoc.shareId,
             itinerary: itineraryDoc.itineraryData,
             fileUrl: itineraryDoc.fileUrl,
+            from: itineraryDoc.from,
+            to: itineraryDoc.to,
+            date: itineraryDoc.date,
+            location: itineraryDoc.location,
             createdAt: itineraryDoc.createdAt,
         },
     });

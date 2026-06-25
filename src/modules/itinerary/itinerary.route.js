@@ -11,7 +11,7 @@ router.get("/share/:shareId", getSharedItinerary)
 // Protected routes
 router.use(verifyToken)
 
-router.post("/trial", upload.single("document"), uploadDocument)
+router.post("/upload", upload.single("document"), uploadDocument)
 router.get("/itineraries", getAllItineraries)
 router.get("/:id", getItineraryById)
 

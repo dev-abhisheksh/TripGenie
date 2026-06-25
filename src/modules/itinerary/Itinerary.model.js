@@ -28,6 +28,26 @@ const itinerarySchema = new mongoose.Schema({
         required: true
     },
 
+    from: {
+        type: String,
+        default: ""
+    },
+
+    to: {
+        type: String,
+        default: ""
+    },
+
+    date: {
+        type: String,
+        default: ""
+    },
+
+    location: {
+        type: String,
+        default: ""
+    },
+
     shareId: {
         type: String,
         required: true,
