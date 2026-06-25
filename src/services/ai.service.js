@@ -30,9 +30,11 @@ Return ONLY valid JSON.
   "returnDate": null,
   "hotelName": null,
   "checkInDate": null,
-  "checkOutDate": null
+  "checkOutDate": null,
+  "location": null
 }
 
+Identify the primary destination city or region of the travel (e.g. "Rio de Janeiro") and populate it in the "location" field.
 Do not include explanations.
 Do not use markdown.
 `

@@ -52,7 +52,12 @@ const itinerarySchema = new mongoose.Schema({
         type: String,
         required: true,
         unique: true
-    }
+    },
+
+    destinationImage: {
+        type: String,
+        default: null,
+    },
 
 }, { timestamps: true });
 

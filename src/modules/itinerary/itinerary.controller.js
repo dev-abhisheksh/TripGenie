@@ -7,6 +7,7 @@ import { generateItinerary } from "../../services/itinerary.service.js";
 import { Itinerary } from "./Itinerary.model.js";
 import mongoose from "mongoose";
 import crypto from "crypto";
+import { getDestinationImage } from "../../services/image.service.js";
 
 const uploadDocument = asyncHandler(async (req, res) => {
     if (!req.file) {
@@ -22,6 +23,10 @@ const uploadDocument = asyncHandler(async (req, res) => {
 
     let aiResponse = await extractTravelData(extractedText);
     aiResponse = JSON.parse(aiResponse);
+
+    const destinationImage = await getDestinationImage(
+        aiResponse.location
+    );
 
     // Generate itinerary from the aiResponses
     let itinerary = await generateItinerary(aiResponse);
@@ -40,10 +45,11 @@ const uploadDocument = asyncHandler(async (req, res) => {
         shareId: crypto.randomUUID(),
         from: aiResponse.departureCity || aiResponse.departureAirport || "",
         to: aiResponse.arrivalCity || aiResponse.arrivalAirport || "",
-        date: aiResponse.departureDate && aiResponse.returnDate 
-            ? `${aiResponse.departureDate} - ${aiResponse.returnDate}` 
+        date: aiResponse.departureDate && aiResponse.returnDate
+            ? `${aiResponse.departureDate} - ${aiResponse.returnDate}`
             : (aiResponse.departureDate || aiResponse.checkInDate || ""),
         location: aiResponse.arrivalCity || aiResponse.hotelName || "",
+        destinationImage
     });
 
     await itineraryDoc.save();
@@ -60,6 +66,7 @@ const uploadDocument = asyncHandler(async (req, res) => {
             to: itineraryDoc.to,
             date: itineraryDoc.date,
             location: itineraryDoc.location,
+            destinationImage: itineraryDoc.destinationImage,
             createdAt: itineraryDoc.createdAt,
         },
     });
