@@ -56,14 +56,24 @@ const uploadDocument = asyncHandler(async (req, res) => {
 });
 
 const getAllItineraries = asyncHandler(async (req, res) => {
-    const itineraries = await Itinerary.find({
+    const limit = Number(req.query.limit);
+
+    const query = Itinerary.find({
         user: req.user._id,
-    }).select("-updatedAt -extractedText -__v").sort({ createdAt: -1 });
+    })
+        .select("-updatedAt -extractedText -__v")
+        .sort({ createdAt: -1 });
+
+    if (limit > 0) {
+        query.limit(limit);
+    }
+
+    const itineraries = await query;
 
     return res.status(200).json({
         success: true,
         message: itineraries.length
-            ? "Fetched all itineraries"
+            ? "Fetched itineraries successfully"
             : "No itineraries found",
         count: itineraries.length,
         itineraries,
