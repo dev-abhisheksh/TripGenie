@@ -7,8 +7,14 @@ import errorMiddleware from "./middleware/error.middleware.js";
 
 const app = express();
 
+const allowedOrigins = [
+    "http://localhost:5173",
+    "https://tripgenie-nine.vercel.app",
+    process.env.CLIENT_URL
+].filter(Boolean);
+
 app.use(cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: allowedOrigins,
     credentials: true
 }));
 app.use(cookieParser());
