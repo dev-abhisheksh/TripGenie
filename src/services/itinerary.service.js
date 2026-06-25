@@ -18,6 +18,7 @@ Format:
 
 {
   "tripSummary": "",
+  "placesToVisit": ["Sight 1", "Sight 2", "Sight 3", "Sight 4"],
   "days": [
     {
       "day": 1,
