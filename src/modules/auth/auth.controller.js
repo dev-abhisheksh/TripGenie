@@ -51,23 +51,26 @@ const register = asyncHandler(async (req, res) => {
     const accessToken = generateAccessToken(user)
     const refreshToken = generateRefreshToken(user)
 
+    const isProduction = process.env.NODE_ENV === "production";
+
     res.cookie("accessToken", accessToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
         maxAge: 24 * 60 * 60 * 1000
     })
 
     res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000
     })
 
     res.status(201).json({
         success: true,
         message: "User registered successfully",
+        token: accessToken,
         user: {
             _id: user._id,
             username: user.username,
@@ -93,23 +96,26 @@ const loginUser = asyncHandler(async (req, res) => {
     const accessToken = generateAccessToken(userExists)
     const refreshToken = generateRefreshToken(userExists)
 
+    const isProduction = process.env.NODE_ENV === "production";
+
     res.cookie("accessToken", accessToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
         maxAge: 1 * 24 * 60 * 60 * 1000
     })
 
     res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000
     })
 
     res.status(200).json({
         success: true,
         message: "User logged in successfully",
+        token: accessToken,
         user: {
             _id: userExists._id,
             username: userExists.username,
@@ -128,17 +134,19 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
+    const isProduction = process.env.NODE_ENV === "production";
+
     res.cookie("accessToken", "", {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
         expires: new Date(0)
     });
 
     res.cookie("refreshToken", "", {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
         expires: new Date(0)
     });
 
