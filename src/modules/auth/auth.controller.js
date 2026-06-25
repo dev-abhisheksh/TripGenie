@@ -3,6 +3,7 @@ import ApiError from "../../utils/apiError.js";
 import { User } from "./user.model.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import uploadToCloudinary from "../../utils/uploadToCloudinary.js";
 
 const generateAccessToken = (user) => {
     return jwt.sign(
@@ -156,9 +157,45 @@ const logoutUser = asyncHandler(async (req, res) => {
     });
 });
 
+const updateProfile = asyncHandler(async (req, res) => {
+    const { fullName } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+
+    if (fullName) {
+        user.fullName = fullName;
+    }
+
+    if (req.file) {
+        const uploadResult = await uploadToCloudinary(
+            req.file.buffer,
+            "auto"
+        );
+        user.avatar = uploadResult.secure_url;
+    }
+
+    await user.save();
+
+    return res.status(200).json({
+        success: true,
+        message: "Profile updated successfully",
+        user: {
+            _id: user._id,
+            username: user.username,
+            fullName: user.fullName,
+            email: user.email,
+            avatar: user.avatar,
+        }
+    });
+});
+
 export {
     register,
     loginUser,
     getCurrentUser,
-    logoutUser
+    logoutUser,
+    updateProfile
 }
